@@ -16,11 +16,27 @@ REST ; aucune route publique (réseau Docker interne uniquement).
 ## Lancer en local
 
 ```bash
-python3 -m venv .venv && . .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-pytest -q          # exécute la suite de tests
 python demo.py     # rejoue les scénarios candidat + anti-biais
 uvicorn app.main:app --reload   # démarre l'API sur :8000
+```
+
+## Tests Automatisés
+
+Le projet utilise `pytest` pour l'ensemble de ses tests (y compris pour l'anonymisation et le matching débiaisé).
+
+Pour exécuter la suite de tests :
+
+```bash
+# 1. Assurez-vous que l'environnement virtuel est activé
+source .venv/bin/activate
+
+# 2. Lancez les tests
+pytest
+
+# Pour obtenir plus de détails lors de l'exécution :
+pytest -v
 ```
 
 ## Limites assumées (cf. dossier §6.6 / §10.2-10.3)
