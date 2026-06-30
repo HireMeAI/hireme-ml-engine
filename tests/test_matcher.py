@@ -60,3 +60,23 @@ def test_explanation_contains_shared_terms():
     results = match_resume_to_jobs(resume, jobs)
     assert "java" in results[0].shared_terms
     assert "spring" in results[0].shared_terms
+
+
+def test_pretrained_vectorizer_matching():
+    import pickle
+    import os
+    from app.matcher import _VECTORIZER_PATH, compute_score
+    import app.matcher as matcher
+    
+    if os.path.exists(_VECTORIZER_PATH):
+        with open(_VECTORIZER_PATH, "rb") as f:
+            vec = pickle.load(f)
+        
+        # Mock the pre-trained vectorizer manually
+        matcher._PRETRAINED_VECTORIZER = vec
+        try:
+            score = compute_score("java developer", "we are hiring java developers")
+            assert score > 0.0
+        finally:
+            # Clean up the mock
+            matcher._PRETRAINED_VECTORIZER = None
