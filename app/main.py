@@ -1,7 +1,7 @@
 """API REST du moteur ML — invoquée par le MatchingService (Java).
 
 Le moteur n'expose aucune route publique : il est accessible uniquement depuis le
-réseau Docker interne (§5.2). La Gateway ne le route pas.
+réseau Docker interne
 """
 
 from __future__ import annotations

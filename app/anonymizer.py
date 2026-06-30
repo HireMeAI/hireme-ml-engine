@@ -1,17 +1,4 @@
-"""Anonymisation amont (anti-biais) — retrait des identifiants directs et indirects.
 
-Conformément à l'approche « anonymisation-first » du dossier (§6.4), aucune donnée
-ne doit atteindre le vectoriseur avant d'avoir transité par ce module. L'approche est
-fondée sur des règles + expressions régulières ; la reconnaissance d'entités nommées
-(NER) reste une évolution documentée (§10.3) et n'est volontairement pas implémentée ici.
-
-Le module retire :
-  - les identifiants connus du candidat (nom, prénom, e-mail, téléphone) passés par l'appelant ;
-  - les civilités et marqueurs de genre ;
-  - l'âge, la date de naissance, les années de service révélatrices d'âge ;
-  - l'adresse postale, le code postal et les arrondissements (proxy géographique/social) ;
-  - les e-mails, téléphones et URLs résiduels.
-"""
 
 from __future__ import annotations
 

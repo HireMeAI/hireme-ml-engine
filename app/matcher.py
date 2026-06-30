@@ -1,14 +1,3 @@
-"""Matching vectoriel débiaisé — TF-IDF + similarité cosinus, explicable.
-
-Implémente le moteur décrit en §6.5 du dossier :
-  - vectorisation TF-IDF (scikit-learn) du CV anonymisé et des offres ;
-  - similarité cosinus CV ↔ offre ;
-  - explication XAI légère : termes partagés ayant le plus pesé dans le score.
-
-Choix assumé (§6.2) : TF-IDF retenu pour son explicabilité, exigée par l'IA Act,
-plutôt qu'un Transformer « boîte noire ». Les limites (synonymie, contexte) sont
-documentées en §6.6 / §10.2.
-"""
 
 from __future__ import annotations
 
@@ -22,9 +11,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from .anonymizer import anonymise
 
-# Stop-words FR/EN minimaux (évite la dépendance NLTK au démarrage ; cf. preprocess.py
-# pour le pipeline ETL complet). Volontairement court : la vectorisation pondère déjà
-# les termes fréquents via l'IDF.
+
 _STOPWORDS = {
     "le", "la", "les", "un", "une", "des", "de", "du", "et", "en", "a", "au", "aux",
     "pour", "avec", "dans", "sur", "par", "ce", "cette", "ces", "son", "sa", "ses",
@@ -64,11 +51,26 @@ def compute_score(resume_text: str, job_text: str) -> float:
     return float(cosine_similarity(matrix[0], matrix[1])[0][0])
 
 
-def _shared_terms(resume_text: str, job_text: str, top_n: int = 5) -> list[str]:
-    a, b = set(_normalize(resume_text).split()), set(_normalize(job_text).split())
+def _shared_terms(norm_resume: str, norm_job: str, top_n: int = 5) -> list[str]:
+    """Termes communs (sur textes déjà normalisés), pour expliquer un score."""
+    a, b = set(norm_resume.split()), set(norm_job.split())
     shared = a & b
     # Tri stable par longueur décroissante (heuristique : termes spécifiques d'abord).
     return sorted(shared, key=lambda t: (-len(t), t))[:top_n]
+
+
+def _corpus_scores(norm_resume: str, norm_jobs: Sequence[str]) -> list[float]:
+ 
+    if not norm_jobs:
+        return []
+    if not norm_resume or not any(norm_jobs):
+        return [0.0] * len(norm_jobs)
+
+    corpus = [norm_resume, *norm_jobs]
+    vec = _build_vectorizer(corpus)
+    matrix = vec.transform(corpus)
+    sims = cosine_similarity(matrix[0], matrix[1:])[0]
+    return [float(s) for s in sims]
 
 
 def match_resume_to_jobs(
@@ -77,25 +79,21 @@ def match_resume_to_jobs(
     known_pii: Sequence[str] | None = None,
     top_n: int = 10,
 ) -> list[MatchExplanation]:
-    """Anonymise le CV puis le classe contre une liste d'offres.
 
-    L'anonymisation est OBLIGATOIRE et BLOQUANTE (§6.4) : elle est appliquée ici,
-    avant toute vectorisation, sur le texte du CV.
-
-    :param jobs: liste de dicts {"id": str, "text": str}.
-    :return: explications triées par score décroissant (Top-N).
-    """
     anon = anonymise(resume_text, known_pii=known_pii)
-    results: list[MatchExplanation] = []
-    for job in jobs:
-        job_text = job.get("text", "")
-        score = compute_score(anon.text, job_text)
-        results.append(
-            MatchExplanation(
-                job_id=str(job.get("id", "")),
-                score=round(score, 4),
-                shared_terms=_shared_terms(anon.text, job_text),
-            )
+    norm_resume = _normalize(anon.text)
+    jobs = list(jobs)
+    norm_jobs = [_normalize(job.get("text", "")) for job in jobs]
+
+    scores = _corpus_scores(norm_resume, norm_jobs)
+
+    results = [
+        MatchExplanation(
+            job_id=str(job.get("id", "")),
+            score=round(score, 4),
+            shared_terms=_shared_terms(norm_resume, norm_job),
         )
+        for job, norm_job, score in zip(jobs, norm_jobs, scores)
+    ]
     results.sort(key=lambda r: r.score, reverse=True)
     return results[:top_n]
