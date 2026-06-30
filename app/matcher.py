@@ -16,6 +16,11 @@ _STOPWORDS = {
     "le", "la", "les", "un", "une", "des", "de", "du", "et", "en", "a", "au", "aux",
     "pour", "avec", "dans", "sur", "par", "ce", "cette", "ces", "son", "sa", "ses",
     "the", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with", "is", "are",
+    # Mots de structure / Boilerplate à ignorer dans le matching et XAI
+    "competences", "competence", "skills", "skill",
+    "experiences", "experience", "formations", "formation",
+    "langues", "langue", "languages", "language",
+    "description", "details", "requises", "requis", "required",
 }
 
 
